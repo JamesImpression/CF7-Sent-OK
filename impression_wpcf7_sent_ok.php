@@ -17,8 +17,7 @@ Class Impression_CF7_Sent_OK{
         add_filter('wpcf7_editor_panels', array($this, 'create_settings_panel'));
         // Hook this in more specificly ?get_plugin_page_hookname?
         add_action('init', array($this, 'save_panel_sent_ok'));
-        // Also needs to hook in nicer!
-        add_action('wp_head', array($this,'add_scripts'));
+        add_action('wpcf7_contact_form', array($this, 'add_scripts'));
     }
 
     public function create_settings_panel($panels){
@@ -55,20 +54,14 @@ Class Impression_CF7_Sent_OK{
         }
     }
 
-    public function add_scripts(){
-        global $wpdb;
-        $script = '';
-        $sql = "SELECT * FROM $wpdb->postmeta WHERE meta_key = '_impression_sent_ok'";
-        $result = $wpdb->get_results($sql);
-        if(count($result) > 0) {
-            $script = '<script>document.addEventListener( \'wpcf7mailsent\', function( event ) { ';
-            foreach($result AS $post){
-                // Add some trim/escaping to this?
-                $script .= 'if(event.detail.contactFormId = '.$post->post_id.'){ '.$post->meta_value.' }';
+    public function add_scripts($contact_form){
+        if ( !strpos($_SERVER['REQUEST_URI'], 'wp-json') ) {
+            $js = get_post_meta( $contact_form->id, '_impression_sent_ok', true );
+            if ( $js ) {
+                $script = '<script>document.addEventListener( \'wpcf7mailsent\', function(event) {if(event.detail.contactFormId == '.$contact_form->id.'){' . $js . '}}, false );</script>';
+                echo $script;
             }
-            $script .= ' }, false );</script>';
         }
-        echo $script;
     }
 }
 
